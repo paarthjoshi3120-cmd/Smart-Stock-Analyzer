@@ -1,0 +1,11 @@
+**Smart Stock Analyzer** is a beginner-friendly platform that brings the entire investment workflow — tracking stocks, recording trades, managing portfolios, and analyzing performance — into one clean, unified system.
+
+Investing today usually means juggling multiple platforms: one for stock prices, another for portfolio tracking, another for transaction history. This fragmentation makes it hard to see the big picture, especially for students and beginners who just want a simple way to understand how their investments are performing. Existing platforms that do offer everything in one place are often too complex, cluttered with advanced analytics, or dependent on external paid services.
+
+Smart Stock Analyzer solves this by focusing on the essentials. Users can register and log in, view stock information, record buy/sell transactions with validation, and track their portfolio in real time. The system automatically calculates profit/loss and break-even points, and offers basic, rule-based recommendations built purely from available stock data — no external AI dependency required.
+
+Beyond being a usable tool, this project is also a practical demonstration of core computer science concepts. On the database side, it showcases relational schema design with proper linkages between users, stocks, portfolios, and transactions, along with efficient storage, retrieval, and updates. On the systems side, it incorporates key Operating System concepts — process and thread management, synchronization, and resource handling — to keep concurrent operations (like simultaneous trades) efficient and reliable.
+
+A distinctive part of the design is its risk-based decision engine, which scores actions and routes users through four tiers of access — from full functionality to a restricted, read-only mode — ensuring risky actions come with appropriate warnings.
+
+This is an academic learning tool, not a real trading platform: it doesn't provide financial advice or support real investment decisions. Its purpose is to show DBMS and OS principles working together inside a genuinely usable application.
