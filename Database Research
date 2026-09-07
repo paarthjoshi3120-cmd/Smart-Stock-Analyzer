@@ -1,0 +1,17 @@
+**Database Selection**
+**Technical Requirement**
+1.Transaction Integrity & ACID Compliance:When a stock trade is carried out, it is necessary to update various factors all at once such as the cash balance of the
+user, stock available for sale, portfolio holdings as well as auditing trails. These steps are interdependent; hence if one of them fails, it will lead to 
+instant rollback of the whole process in order to avoid imbalance errors.
+2.Data Model:In this domain, there are clear and distinct entities that have high level of relationships. They include Users, Stocks, Portfolios, Transactions 
+as well as System Logs. These entities have specified relationships involving one-to-many or many-to-many links.
+3.Concurrency and thread handling:Under multi-threaded user activity, concurrent buy/sell execution requires row-level locking or isolated transactions to avoid race 
+conditions and double-spending errors.
+
+**Considerations of MongoDB**: Although MongoDB provides high writing speed and flexible document nature which is appropriate for crude market price feed, 
+it is not enough. Additional application level enforcing and replica sets arrangement is necessary while handling financial relationships as well as cross documents 
+consistencies.
+
+**Advantage of MySQL**: The storage engine InnoDB of MySQL has an inbuilt ACID compliance, immediate consistency, explicit foreign keys referential integrity and 
+standard row level locking mechanism. It is for this reason that such capabilities of MySQL conform to requirements of monetary transactions as well as the 
+evaluation of DBMS in academic researches.
