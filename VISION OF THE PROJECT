@@ -1,0 +1,27 @@
+Project: Smart Stock Analyzer (SSA Pro)
+1. Project Statement & Core Purpose
+
+1.1 Problem Statement
+Navigating financial markets and stock trading systems presents a steep learning curve for beginners. Novice investors often lack access to risk-aware trading 
+platforms that emphasize risk mitigation and educational feedback. Simultaneously, modern financial systems demand high throughput, strict data consistency, and 
+low-latency transaction processing under concurrent user loads. Traditional single-tier architectures struggle to maintain real-time price updates and atomic 
+order execution without risking data race conditions or system deadlocks.   
+
+1.2 Purpose & Vision
+The vision of Smart Stock Analyzer (SSA Pro) is to deliver an educational, multi-tier stock trading and portfolio management platform that seamlessly bridges 
+real-time financial simulation with core computer science principles—specifically Database Management Systems (DBMS) and Operating System (OS) architecture. 
+By combining a risk-aware decision engine, real-time synthetic market simulation, and robust concurrency control, SSA Pro aims to provide a safe environment for
+beginner traders while demonstrating high-performance system design.   
+
+
+2. High-Level System Architecture & Technology Stack
+SSA Pro is designed using a decoupled multi-tier architecture to separate user interface rendering, core application business logic, and backend data storage.
+
+Frontend (User Interface): Built using Java Swing to deliver a responsive desktop interface for user authentication, live market viewing, order execution, 
+portfolio analytics, and decision alerts.   Backend Application Server: Developed using Python Flask, providing business logic orchestration, session management, 
+risk evaluation algorithms, and HTTP/HTTPS REST API integration.   
+Database Management System (DBMS): Relational database architecture (MySQL / SQLite) engineered with normalized schemas, primary/foreign key relationships, explicit 
+integrity constraints (CHECK, UNIQUE), indexes, and atomic ACID transactions to prevent data corruption or inconsistent balances.   
+
+Operating System (OS) Concurrency: Backend orchestration leverages OS-level POSIX/Windows multithreading, background worker threads for live price updates, 
+mutual exclusion (Mutex) locks, and fixed lock ordering to handle high concurrency and prevent deadlocks or race conditions.
