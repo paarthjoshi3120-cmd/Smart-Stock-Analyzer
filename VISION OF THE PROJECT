@@ -19,7 +19,8 @@ SSA Pro is designed using a decoupled multi-tier architecture to separate user i
 
 Frontend (User Interface): Built using Java Swing to deliver a responsive desktop interface for user authentication, live market viewing, order execution, 
 portfolio analytics, and decision alerts.   Backend Application Server: Developed using Python Flask, providing business logic orchestration, session management, 
-risk evaluation algorithms, and HTTP/HTTPS REST API integration.   
+risk evaluation algorithms, and HTTP/HTTPS REST API integration. 
+
 Database Management System (DBMS): Relational database architecture (MySQL / SQLite) engineered with normalized schemas, primary/foreign key relationships, explicit 
 integrity constraints (CHECK, UNIQUE), indexes, and atomic ACID transactions to prevent data corruption or inconsistent balances.   
 
