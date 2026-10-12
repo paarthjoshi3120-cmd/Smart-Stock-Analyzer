@@ -1,94 +1,23 @@
-# Smart Stock Analyzer - Database Schema
+# Smart Stock Analyzer — Database Schema Notes
 
-## 1. Overview
+Based on the project reports; verify names against the actual schema used by your Java application.
 
-The Smart Stock Analyzer uses a relational database to store and manage
-user information, stock details, portfolios, and trading transactions.
-
-The database is designed to maintain proper relationships between different
-entities and support stock analysis and portfolio management.
-
-## 2. Main Database Entities
-
-The system contains the following major entities:
-
-- Users
-- Stocks
-- Portfolios
-- Transactions
-
-## 3. Users Table
-
-The Users table stores information about registered users.
-
-| Column | Data Type | Description |
+| Table | Purpose | Typical fields described in reports |
 |---|---|---|
-| user_id | INT | Unique ID of the user |
-| name | VARCHAR(100) | User's name |
-| email | VARCHAR(150) | User's email address |
-| password | VARCHAR(255) | User login password |
+| `Users` | Authentication | `user_id` (PK), `name`, `email` (UNIQUE), `password_hash`, `created_at` |
+| `Stocks` | Stock master data | `stock_id` (PK), `symbol` (UNIQUE), `company`, `current_price`, `available_qty` |
+| `Portfolio` | Current user holdings | `user_id` (FK), `stock_id` (FK), `quantity`, `avg_buy_price` |
+| `Transactions` | Buy/sell ledger | `txn_id` (PK), `user_id` (FK), `stock_id` (FK), `type`, `quantity`, `price`, `txn_time` |
+| `Logs` | Audit events/risk decisions | `log_id` (PK), `user_id` (FK), `event`, `risk_score`, `created_at` |
+| `price_history` | Historical prices, if persisted | Confirm whether this table exists and its actual fields |
 
-**Primary Key:** `user_id`
+## Relationships and integrity
+- One user can have many portfolio rows and transactions.
+- One stock can appear in many portfolios and transactions.
+- Foreign keys should prevent references to missing users/stocks.
+- Email and stock symbol should be unique.
+- Quantities and prices should be positive where applicable.
+- Available stock and portfolio quantities should never become negative.
+- Trade, portfolio update and ledger insertion should commit or roll back together.
 
-## 4. Stocks Table
-
-The Stocks table stores information about stocks available for analysis.
-
-| Column | Data Type | Description |
-|---|---|---|
-| stock_id | INT | Unique ID of the stock |
-| stock_name | VARCHAR(100) | Name of the stock |
-| symbol | VARCHAR(20) | Stock market symbol |
-| current_price | DECIMAL(10,2) | Current stock price |
-
-**Primary Key:** `stock_id`
-
-## 5. Portfolios Table
-
-The Portfolios table stores the portfolios created by users.
-
-| Column | Data Type | Description |
-|---|---|---|
-| portfolio_id | INT | Unique ID of the portfolio |
-| user_id | INT | ID of the portfolio owner |
-| portfolio_name | VARCHAR(100) | Name of the portfolio |
-
-**Primary Key:** `portfolio_id`
-
-**Foreign Key:** `user_id` references `Users(user_id)`
-
-## 6. Transactions Table
-
-The Transactions table records stock buying and selling activities.
-
-| Column | Data Type | Description |
-|---|---|---|
-| transaction_id | INT | Unique transaction ID |
-| user_id | INT | ID of the user |
-| stock_id | INT | ID of the stock |
-| portfolio_id | INT | ID of the portfolio |
-| transaction_type | VARCHAR(10) | BUY or SELL |
-| quantity | INT | Number of shares |
-| price | DECIMAL(10,2) | Price per share |
-| transaction_date | DATE | Date of transaction |
-
-**Primary Key:** `transaction_id`
-
-**Foreign Keys:**
-
-- `user_id` references `Users(user_id)`
-- `stock_id` references `Stocks(stock_id)`
-- `portfolio_id` references `Portfolios(portfolio_id)`
-
-## 7. Relationships
-
-The main relationships are:
-
-```text
-Users
-  |
-  +---- Portfolios
-  |
-  +---- Transactions
-             |
-             +---- Stocks
+This file documents the design only; it does not create or migrate tables. Update it to match the actual Java database configuration.
