@@ -58,26 +58,7 @@ public class AppData {
                 "Banking", 1120.40, 0.95, "IN"
         ));
 
-        COMPANIES.add(new Company(
-                "BHARTIARTL", "Bharti Airtel",
-                "Telecom", 890.00, 2.40, "IN"
-        ));
-
-        COMPANIES.add(new Company(
-                "LT", "Larsen & Toubro",
-                "Infra", 3260.90, 0.30, "IN"
-        ));
-
-        COMPANIES.add(new Company(
-                "SBIN", "State Bank of India",
-                "Banking", 780.35, -0.55, "IN"
-        ));
-
-        COMPANIES.add(new Company(
-                "ASIANPAINT", "Asian Paints",
-                "FMCG", 3140.60, 1.05, "IN"
-        ));
-
+        
         COMPANIES.add(new Company(
                 "TATAMOTORS", "Tata Motors",
                 "Auto", 985.40, 2.10, "IN"
@@ -95,15 +76,6 @@ public class AppData {
                 "Technology", 178.45, 0.85, "US"
         ));
 
-        COMPANIES.add(new Company(
-                "MSFT", "Microsoft Corp.",
-                "Technology", 378.20, 1.10, "US"
-        ));
-
-        COMPANIES.add(new Company(
-                "GOOGL", "Alphabet Inc.",
-                "Technology", 142.60, 0.45, "US"
-        ));
 
         COMPANIES.add(new Company(
                 "AMZN", "Amazon.com Inc.",
@@ -161,19 +133,7 @@ public class AppData {
                 "Automotive", 98.45, 1.55, "DE"
         ));
 
-        // ---------- CHINA COMPANIES ----------
-
-        COMPANIES.add(new Company(
-                "BABA", "Alibaba Group",
-                "E-Commerce", 78.30, -0.95, "CN"
-        ));
-
-        COMPANIES.add(new Company(
-                "JD", "JD.com",
-                "E-Commerce", 28.75, 0.60, "CN"
-        ));
-    }
-
+        
     // ---------- MODELS ----------
 
     static class User {
