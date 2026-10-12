@@ -17,7 +17,7 @@ beginner traders while demonstrating high-performance system design.
 2. High-Level System Architecture & Technology Stack
 SSA Pro is designed using a decoupled multi-tier architecture to separate user interface rendering, core application business logic, and backend data storage.
 
-Frontend (User Interface): Built using Java Swing to deliver a responsive desktop interface for user authentication, live market viewing, order execution, 
+Frontend: Built using Java Swing to deliver a responsive desktop interface for user authentication, live market viewing, order execution, 
 portfolio analytics, and decision alerts.   Backend Application Server: Developed using Python Flask, providing business logic orchestration, session management, 
 risk evaluation algorithms, and HTTP/HTTPS REST API integration. 
 
