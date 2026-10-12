@@ -248,14 +248,8 @@ public class UIUtils {
             case "UK":
                 return "🇬🇧 UK";
 
-            case "JP":
-                return "🇯🇵 Japan";
-
             case "DE":
                 return "🇩🇪 Germany";
-
-            case "CN":
-                return "🇨🇳 China";
 
             default:
                 return c;
