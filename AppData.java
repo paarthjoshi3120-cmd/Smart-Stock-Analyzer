@@ -329,30 +329,15 @@ public class AppData {
                 .toString();
     }
 
-    static String countryFlag(String c) {
-
+    public static String countryFlag(String c) {
         switch (c) {
-
-            case "IN":
-                return "🇮🇳 India";
-
-            case "US":
-                return "🇺🇸 USA";
-
-            case "UK":
-                return "🇬🇧 UK";
-
-            case "JP":
-                return "🇯🇵 Japan";
-
-            case "DE":
-                return "🇩🇪 Germany";
-
-            case "CN":
-                return "🇨🇳 China";
-
-            default:
-                return c;
+            case "IN": return "🇮🇳 India";
+            case "US": return "🇺🇸 USA";
+            case "UK": return "🇬🇧 UK";
+            case "JP": return "🇯🇵 Japan";
+            case "DE": return "🇩🇪 Germany";
+            case "CN": return "🇨🇳 China";
+            default: return c;
         }
     }
 }
