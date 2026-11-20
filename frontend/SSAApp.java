@@ -116,7 +116,7 @@ public class SSAApp {
                 throw new ApiException(response.statusCode(), parsed);
             return parsed;
         }
-private static String toJson(Object value) {
+        private static String toJson(Object value) {
             if (value == null) return "null";
             if (value instanceof String) return "\"" + ((String)value).replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\"";
             if (value instanceof Number || value instanceof Boolean) return value.toString();
