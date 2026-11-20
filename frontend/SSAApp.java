@@ -116,3 +116,133 @@ public class SSAApp {
                 throw new ApiException(response.statusCode(), parsed);
             return parsed;
         }
+private static String toJson(Object value) {
+            if (value == null) return "null";
+            if (value instanceof String) return "\"" + ((String)value).replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\"";
+            if (value instanceof Number || value instanceof Boolean) return value.toString();
+            if (value instanceof Map) {
+                StringBuilder out = new StringBuilder("{"); boolean first = true;
+                for (Object entryObj : ((Map<?, ?>)value).entrySet()) {
+                    Map.Entry<?, ?> e = (Map.Entry<?, ?>)entryObj;
+                    if (!first) out.append(','); first = false;
+                    out.append(toJson(String.valueOf(e.getKey()))).append(':').append(toJson(e.getValue()));
+                }
+                return out.append('}').toString();
+            }
+            if (value instanceof Iterable) {
+                StringBuilder out = new StringBuilder("["); boolean first = true;
+                for (Object item : (Iterable<?>)value) { if (!first) out.append(','); first = false; out.append(toJson(item)); }
+                return out.append(']').toString();
+            }
+            return toJson(value.toString());
+        }
+    }
+
+    static Map<String, Object> mapOf(Object... pairs) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        for (int i = 0; i + 1 < pairs.length; i += 2) m.put(String.valueOf(pairs[i]), pairs[i + 1]);
+        return m;
+    }
+    @SuppressWarnings("unchecked") static Map<String, Object> asMap(Object o) {
+        return o instanceof Map ? (Map<String, Object>)o : new LinkedHashMap<>();
+    }
+    @SuppressWarnings("unchecked") static List<Object> asList(Object o) {
+        return o instanceof List ? (List<Object>)o : new ArrayList<>();
+    }
+    static String stringValue(Object o) { return o == null ? "" : String.valueOf(o); }
+    static double doubleValue(Object o) { try { return o instanceof Number ? ((Number)o).doubleValue() : Double.parseDouble(String.valueOf(o)); } catch (Exception e) { return 0; } }
+    static long longValue(Object o) { try { return o instanceof Number ? ((Number)o).longValue() : Long.parseLong(String.valueOf(o)); } catch (Exception e) { return 0; } }
+
+    // Small JSON parser so the Swing frontend needs no third-party JSON library.
+    static class JsonParser {
+        final String text; int pos = 0;
+        JsonParser(String text) { this.text = text == null ? "" : text; }
+        Object parse() { skip(); Object v = value(); skip(); return v; }
+        void skip() { while (pos < text.length() && Character.isWhitespace(text.charAt(pos))) pos++; }
+        Object value() {
+            skip(); if (pos >= text.length()) return null;
+            char c = text.charAt(pos);
+            if (c == '{') return object(); if (c == '[') return array(); if (c == '"') return string();
+            if (c == 't' && take("true")) return Boolean.TRUE;
+            if (c == 'f' && take("false")) return Boolean.FALSE;
+            if (c == 'n' && take("null")) return null;
+            return number();
+        }
+        boolean take(String s) { if (text.startsWith(s, pos)) { pos += s.length(); return true; } return false; }
+        Map<String, Object> object() {
+            Map<String, Object> m = new LinkedHashMap<>(); pos++; skip();
+            if (pos < text.length() && text.charAt(pos) == '}') { pos++; return m; }
+            while (pos < text.length()) {
+                skip(); String k = string(); skip(); if (pos < text.length() && text.charAt(pos) == ':') pos++;
+                m.put(k, value()); skip(); if (pos < text.length() && text.charAt(pos) == ',') { pos++; continue; }
+                if (pos < text.length() && text.charAt(pos) == '}') pos++; break;
+            }
+            return m;
+        }
+        List<Object> array() {
+            List<Object> a = new ArrayList<>(); pos++; skip();
+            if (pos < text.length() && text.charAt(pos) == ']') { pos++; return a; }
+            while (pos < text.length()) { a.add(value()); skip(); if (pos < text.length() && text.charAt(pos) == ',') { pos++; continue; } if (pos < text.length() && text.charAt(pos) == ']') pos++; break; }
+            return a;
+        }
+        String string() {
+            StringBuilder b = new StringBuilder(); if (pos < text.length() && text.charAt(pos) == '"') pos++;
+            while (pos < text.length()) {
+                char c = text.charAt(pos++); if (c == '"') break;
+                if (c == '\\' && pos < text.length()) {
+                    char e = text.charAt(pos++);
+                    switch (e) { case '"': b.append('"'); break; case '\\': b.append('\\'); break; case '/': b.append('/'); break; case 'b': b.append('\b'); break; case 'f': b.append('\f'); break; case 'n': b.append('\n'); break; case 'r': b.append('\r'); break; case 't': b.append('\t'); break; case 'u': if (pos + 4 <= text.length()) { b.append((char)Integer.parseInt(text.substring(pos, pos + 4), 16)); pos += 4; } break; default: b.append(e); }
+                } else b.append(c);
+            }
+            return b.toString();
+        }
+        Number number() {
+            int start = pos; while (pos < text.length() && "-+0123456789.eE".indexOf(text.charAt(pos)) >= 0) pos++;
+            String n = text.substring(start, pos); try { if (n.contains(".") || n.contains("e") || n.contains("E")) return Double.parseDouble(n); return Long.parseLong(n); } catch (Exception e) { return 0; }
+        }
+    }
+
+    static void loadBackendData(User user) throws Exception {
+        Map<String, Object> stockResponse = API.get("/api/stocks");
+        Map<String, Company> existingCompanies = new HashMap<>();
+        for (Company c : COMPANIES) existingCompanies.put(c.symbol, c);
+        COMPANIES.clear();
+        for (Object item : asList(stockResponse.get("data"))) {
+            Map<String, Object> r = asMap(item);
+            String symbol = stringValue(r.get("symbol"));
+            Company c = existingCompanies.get(symbol);
+            if (c == null) c = new Company(symbol, stringValue(r.get("name")),
+                    stringValue(r.get("sector")), doubleValue(r.get("price")),
+                    doubleValue(r.get("changePct")), stringValue(r.get("country")));
+            c.name = stringValue(r.get("name")); c.sector = stringValue(r.get("sector"));
+            c.price = doubleValue(r.get("price")); c.changePct = doubleValue(r.get("changePct"));
+            c.country = stringValue(r.get("country"));
+            List<Candle> cachedHistory = PRICE_HISTORY.get(symbol);
+            if (cachedHistory != null && !cachedHistory.isEmpty()) {
+                Candle last = cachedHistory.get(cachedHistory.size() - 1);
+                last.c = c.price; last.h = Math.max(last.h, c.price); last.l = Math.min(last.l, c.price);
+            }
+            COMPANIES.add(c);
+        }
+        Map<String, Object> portfolio = API.get("/api/portfolio");
+        user.cash = doubleValue(portfolio.get("cash"));
+        List<Holding> holdings = portfolioOf(user.username); holdings.clear();
+        for (Object item : asList(portfolio.get("holdings"))) {
+            Map<String, Object> r = asMap(item);
+            Holding h = new Holding(stringValue(r.get("symbol")), (int)longValue(r.get("quantity")), doubleValue(r.get("avg_price")));
+            h.backendProfitLoss = doubleValue(r.get("profit_loss"));
+            holdings.add(h);
+        }
+        HISTORY.clear();
+        Map<String, Object> history = API.get("/api/history");
+        for (Object item : asList(history.get("data"))) {
+            Map<String, Object> r = asMap(item);
+            String type = stringValue(r.get("type"));
+            double gross = doubleValue(r.get("price")) * longValue(r.get("quantity"));
+            double fee = doubleValue(r.get("fee"));
+            double total = "BUY".equals(type) ? gross + fee : gross - fee;
+            HISTORY.add(new String[]{stringValue(r.get("ts")), type, stringValue(r.get("symbol")),
+                    stringValue(r.get("quantity")), inr(doubleValue(r.get("price"))), inr(total), user.username});
+        }
+        Collections.reverse(HISTORY); // UI history tables expect oldest-to-newest storage.
+    }
