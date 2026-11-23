@@ -218,15 +218,6 @@ public class SSAApp {
             c.name = stringValue(r.get("name")); c.sector = stringValue(r.get("sector"));
             c.price = doubleValue(r.get("price")); c.changePct = doubleValue(r.get("changePct"));
             c.country = stringValue(r.get("country"));
-            Object scoreValue = r.get("risk_score");
-            c.backendRiskScore = scoreValue instanceof Number ? ((Number) scoreValue).doubleValue() : Double.NaN;
-            Map<String, Object> riskDecision = asMap(r.get("decision"));
-            c.riskKey = stringValue(riskDecision.get("key"));
-            c.riskLabel = stringValue(riskDecision.get("label"));
-            c.riskMessage = stringValue(riskDecision.get("message"));
-            if (c.riskKey.isEmpty() || "null".equals(c.riskKey)) c.riskKey = "unknown";
-            if (c.riskLabel.isEmpty() || "null".equals(c.riskLabel)) c.riskLabel = "Risk unavailable";
-            if (c.riskMessage.isEmpty() || "null".equals(c.riskMessage)) c.riskMessage = "Risk data not loaded";
             List<Candle> cachedHistory = PRICE_HISTORY.get(symbol);
             if (cachedHistory != null && !cachedHistory.isEmpty()) {
                 Candle last = cachedHistory.get(cachedHistory.size() - 1);
@@ -310,26 +301,11 @@ public class SSAApp {
     }
     static class Company {
         String symbol, name, sector, country;
-        // Authoritative backend risk assessment used by the Trade window.
-        String riskKey = "unknown", riskLabel = "Risk unavailable", riskMessage = "Risk data not loaded";
-        double price, changePct, backendRiskScore = Double.NaN;
+        double price, changePct;
         Company(String s, String n, String sec, double p, double c, String co) {
             symbol = s; name = n; sector = sec; price = p; changePct = c; country = co;
         }
     }
-    // One authoritative risk label across the UI. The backend decision is
-    // also enforced by /api/trade; Java does not calculate a second risk label.
-    static String backendRiskDisplay(Company c) {
-        if (c == null || c.riskKey == null) return "Unknown";
-        switch (c.riskKey) {
-            case "allow": return "Low";
-            case "reminder": return "Moderate";
-            case "strong": return "High";
-            case "restrict": return "Restricted";
-            default: return "Unknown";
-        }
-    }
-
     static class Holding {
         String symbol; int qty; double avgPrice; double backendProfitLoss = Double.NaN;
         Holding(String s, int q, double a) { symbol = s; qty = q; avgPrice = a; }
@@ -1151,7 +1127,7 @@ public class SSAApp {
     static class Pick {
         Company c;
         double ret1y, ret3m, vol, dd, trendPct, score;
-        String trend, why;
+        String risk, trend, why;
     }
 
     static double clamp(double v, double lo, double hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -1179,6 +1155,7 @@ public class SSAApp {
         for (int i = n - 50; i < n; i++) ma += all.get(i).c;
         ma /= 50;
         p.trendPct = (last / ma - 1) * 100;
+        p.risk = p.vol < 22 ? "Low" : p.vol < 30 ? "Medium" : "High";
         p.trend = p.trendPct > 2 ? "Uptrend" : p.trendPct < -2 ? "Downtrend" : "Sideways";
 
         double riskS = clamp(100 - (p.vol - 15) * 3.5, 0, 100);
@@ -1218,7 +1195,7 @@ public class SSAApp {
                 } catch (NumberFormatException ignored) {}
             } else if (s.equals("Low") || s.equals("Uptrend")) col = SUCCESS;
             else if (s.equals("Medium") || s.equals("Sideways")) col = WARNING;
-            else if (s.equals("High") || s.equals("Restricted") || s.equals("Downtrend")) col = DANGER;
+            else if (s.equals("High") || s.equals("Downtrend")) col = DANGER;
             if (!sel) setForeground(col);
             setFont(H3);
             return this;
@@ -1712,13 +1689,10 @@ public class SSAApp {
             g.setColor(Color.WHITE);
             g.fill(new java.awt.geom.Ellipse2D.Double(ex - 4, ey - 4, 8, 8));
 
-            String previewRisk = backendRiskDisplay(nvPick.c);
             String[] lab = {"1Y RETURN", "RISK", "TREND"};
-            String[] val = {pct(nvPick.ret1y), previewRisk, nvPick.trend};
-            Color riskColor = "allow".equals(nvPick.c.riskKey) ? SUCCESS
-                    : "reminder".equals(nvPick.c.riskKey) ? WARNING
-                    : ("strong".equals(nvPick.c.riskKey) || "restrict".equals(nvPick.c.riskKey)) ? DANGER : TEXT_MUTED;
-            Color[] col = {nvPick.ret1y >= 0 ? SUCCESS : DANGER, riskColor,
+            String[] val = {pct(nvPick.ret1y), nvPick.risk, nvPick.trend};
+            Color[] col = {nvPick.ret1y >= 0 ? SUCCESS : DANGER,
+                    nvPick.risk.equals("Low") ? SUCCESS : nvPick.risk.equals("Medium") ? WARNING : DANGER,
                     nvPick.trend.equals("Uptrend") ? SUCCESS : nvPick.trend.equals("Downtrend") ? DANGER : WARNING};
             for (int i = 0; i < 3; i++) {
                 int tx = x0 + 24 + i * 124;
@@ -2560,14 +2534,13 @@ public class SSAApp {
             p.add(top, BorderLayout.NORTH);
 
             marketM = new DefaultTableModel(
-                    new Object[]{"Symbol", "Company", "Sector", "Country", "Price", "Change %", "Risk"}, 0) {
+                    new Object[]{"Symbol", "Company", "Sector", "Country", "Price", "Change %"}, 0) {
                 @Override public boolean isCellEditable(int r, int c) { return false; }
             };
             marketT = darkTable(marketM);
             marketT.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             marketT.getColumnModel().getColumn(4).setCellRenderer(rightR());
             marketT.getColumnModel().getColumn(5).setCellRenderer(colorR());
-            marketT.getColumnModel().getColumn(6).setCellRenderer(new TagR(false));
             marketT.getColumnModel().getColumn(0).setPreferredWidth(95);
             marketT.getColumnModel().getColumn(1).setPreferredWidth(160);
             marketT.getColumnModel().getColumn(3).setPreferredWidth(100);
@@ -2602,7 +2575,7 @@ public class SSAApp {
                     if (c.symbol.equals(keep)) keepRow = marketM.getRowCount();
                     marketM.addRow(new Object[]{
                             c.symbol, c.name, c.sector,
-                            countryFlag(c.country), inr(c.price), pct(c.changePct), backendRiskDisplay(c)});
+                            countryFlag(c.country), inr(c.price), pct(c.changePct)});
                 }
             }
             if (marketM.getRowCount() > 0) {
@@ -2671,9 +2644,6 @@ public class SSAApp {
             JLabel ownedL = new JLabel("0");
             JLabel totalL = new JLabel("Rs.0.00");
             JLabel cashAfterL = new JLabel("Rs.0.00");
-            JLabel riskL = new JLabel("Risk data loading...");
-            riskL.setFont(new Font("SansSerif", Font.BOLD, 12));
-            JButton[] submitRef = new JButton[1];
             priceL.setFont(new Font("SansSerif", Font.BOLD, 16)); priceL.setForeground(ACCENT);
             ownedL.setFont(H3); ownedL.setForeground(TEXT);
             totalL.setFont(new Font("SansSerif", Font.BOLD, 16)); totalL.setForeground(ACCENT);
@@ -2693,17 +2663,6 @@ public class SSAApp {
                 double after = buy.isSelected() ? me.cash - total : me.cash + total;
                 cashAfterL.setText(inr(after));
                 cashAfterL.setForeground(after < 0 ? DANGER : SUCCESS);
-
-                // Display the same score and decision that the backend enforces during BUY.
-                String scoreText = Double.isNaN(cmp.backendRiskScore) ? "N/A"
-                        : String.format(Locale.US, "%.2f%%", cmp.backendRiskScore * 100.0);
-                riskL.setText("<html><b>" + cmp.riskLabel + "</b> (score: " + scoreText + ")<br>"
-                        + cmp.riskMessage + "</html>");
-                if ("allow".equals(cmp.riskKey)) riskL.setForeground(SUCCESS);
-                else if ("reminder".equals(cmp.riskKey) || "strong".equals(cmp.riskKey)) riskL.setForeground(WARNING);
-                else if ("restrict".equals(cmp.riskKey)) riskL.setForeground(DANGER);
-                else riskL.setForeground(TEXT_MUTED);
-                if (submitRef[0] != null) submitRef[0].setEnabled(!(buy.isSelected() && ("restrict".equals(cmp.riskKey) || "unknown".equals(cmp.riskKey))));
                 tradeChart.setCompany(cmp);
             };
             combo.addActionListener(e -> update.run());
@@ -2715,7 +2674,6 @@ public class SSAApp {
             int row = 1;
             row = addRow(c, g, row, "Company", combo);
             row = addRow(c, g, row, "Current Price", priceL);
-            row = addRow(c, g, row, "Risk Assessment", riskL);
             row = addRow(c, g, row, "Shares Owned", ownedL);
             row = addRow(c, g, row, "Quantity", qty);
 
@@ -2732,8 +2690,6 @@ public class SSAApp {
             row = addRow(c, g, row, "Cash After Trade", cashAfterL);
 
             JButton submit = btn("Submit Order", SUCCESS);
-            submitRef[0] = submit;
-            update.run();
             g.gridx = 0; g.gridy = row; g.gridwidth = 2;
             g.fill = GridBagConstraints.NONE;
             g.anchor = GridBagConstraints.EAST;
@@ -2752,11 +2708,7 @@ public class SSAApp {
                         result = API.post("/api/trade", mapOf("symbol", cmp.symbol, "type", side,
                                 "quantity", q, "confirm", false));
                     } catch (ApiException ex) {
-                        boolean confirmationRequired = ex.statusCode == 409
-                                && (Boolean.TRUE.equals(ex.payload.get("needs_confirmation"))
-                                    || "strong".equals(stringValue(ex.payload.get("decision")))
-                                    || ex.getMessage().toLowerCase(Locale.ROOT).contains("confirmation"));
-                        if (confirmationRequired) {
+                        if (ex.statusCode == 409 && Boolean.TRUE.equals(ex.payload.get("needs_confirmation"))) {
                             int choice = JOptionPane.showConfirmDialog(MainScreen.this,
                                     ex.getMessage() + "\n\nDo you want to explicitly confirm this trade?",
                                     "High-risk trade confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
@@ -2772,11 +2724,6 @@ public class SSAApp {
                             + inr(doubleValue(result.get("total"))) + "  ·  Cash " + inr(me.cash), false);
                 } catch (ApiException ex) {
                     setStatus(ex.getMessage(), true);
-                    if (ex.statusCode == 403 && "restrict".equals(stringValue(ex.payload.get("decision")))) {
-                        riskL.setText("<html><b>Restricted</b><br>Buying is disabled for this stock.</html>");
-                        riskL.setForeground(DANGER);
-                        if (buy.isSelected()) submit.setEnabled(false);
-                    }
                 } catch (Exception ex) {
                     setStatus("Backend connection failed. Check that Flask is running.", true);
                 }
@@ -2809,13 +2756,12 @@ public class SSAApp {
             p.add(h1("My Portfolio"), BorderLayout.NORTH);
 
             portM = new DefaultTableModel(
-                    new Object[]{"Symbol", "Company", "Qty", "Avg Price", "Current", "Value", "P&L", "Risk"}, 0) {
+                    new Object[]{"Symbol", "Company", "Qty", "Avg Price", "Current", "Value", "P&L"}, 0) {
                 @Override public boolean isCellEditable(int r, int c) { return false; }
             };
             portT = darkTable(portM);
             for (int i = 2; i < 6; i++) portT.getColumnModel().getColumn(i).setCellRenderer(rightR());
             portT.getColumnModel().getColumn(6).setCellRenderer(colorR());
-            portT.getColumnModel().getColumn(7).setCellRenderer(new TagR(false));
             refreshPortfolio();
             p.add(scroll(portT), BorderLayout.CENTER);
             return p;
@@ -2837,8 +2783,7 @@ public class SSAApp {
                         inr(h.avgPrice),
                         inr(cur),
                         inr(val),
-                        signedInr(pl),
-                        c != null ? backendRiskDisplay(c) : "Unknown"});
+                        signedInr(pl)});
             }
         }
 
@@ -3259,7 +3204,7 @@ public class SSAApp {
             int rank = 1;
             for (Pick p : picks) {
                 finderM.addRow(new Object[]{rank++, p.c.symbol, p.c.name, p.c.sector,
-                        pct(p.ret1y), backendRiskDisplay(p.c), p.trend, String.valueOf(Math.round(p.score))});
+                        pct(p.ret1y), p.risk, p.trend, String.valueOf(Math.round(p.score))});
                 if (rank > 10) break;
             }
             if (finderM.getRowCount() > 0) finderT.setRowSelectionInterval(0, 0);
@@ -3377,7 +3322,7 @@ public class SSAApp {
             };
             for (Company c : COMPANIES)
                 m.addRow(new Object[]{c.symbol, c.name, DESC.getOrDefault(c.symbol, ""), c.sector,
-                        countryFlag(c.country), backendRiskDisplay(c)});
+                        countryFlag(c.country), analyze(c, "Balanced").risk});
             compT = darkTable(m);
             compT.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             compT.getColumnModel().getColumn(5).setCellRenderer(new TagR(false));
